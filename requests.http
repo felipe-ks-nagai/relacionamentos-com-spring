@@ -1,0 +1,117 @@
+### Roteiro das demonstrações dos slides (IntelliJ HTTP Client / VS Code REST Client)
+@host = http://localhost:8080
+
+############ 1) @OneToOne: Aluno <-> Perfil ############
+
+### Dados iniciais
+GET {{host}}/alunos
+
+### Criar perfil (id 3)
+POST {{host}}/perfis
+Content-Type: application/json
+
+{ "telefone": "11999999999", "cidade": "São Paulo" }
+
+### Criar aluno Beatriz (id 3)
+POST {{host}}/alunos
+Content-Type: application/json
+
+{ "nome": "Beatriz", "email": "beatriz@email.com" }
+
+### Associar perfil (sem body)
+PUT {{host}}/alunos/3/perfil/3
+
+### Conferir
+GET {{host}}/alunos/3
+
+### Perfil já usado por outro aluno -> 409
+PUT {{host}}/alunos/2/perfil/1
+
+### Erro comum: excluir perfil em uso -> 409
+DELETE {{host}}/perfis/1
+
+### Correção: desfaz a associação (204) e só depois exclui (204)
+DELETE {{host}}/alunos/1/perfil
+
+###
+DELETE {{host}}/perfis/1
+
+### Desfazer a associação da Beatriz (FK vira null)
+DELETE {{host}}/alunos/3/perfil
+
+############ 2) @ManyToOne: Instrutor <-> Curso ############
+
+### Criar instrutor Roberta (id 3)
+POST {{host}}/instrutores
+Content-Type: application/json
+
+{ "nome": "Roberta", "email": "roberta@email.com" }
+
+### Criar curso com instrutorId
+POST {{host}}/cursos
+Content-Type: application/json
+
+{ "nome": "Spring Security", "cargaHoraria": 16, "instrutorId": 3 }
+
+### Ler pelo lado 1
+GET {{host}}/instrutores/1
+
+###
+GET {{host}}/instrutores/1/cursos
+
+### Trocar instrutor (sem body)
+PUT {{host}}/cursos/1/instrutor/2
+
+### Conferir
+GET {{host}}/cursos/1
+
+############ 3) @ManyToMany: Aluno <-> Curso ############
+
+### Matricular (sem body)
+POST {{host}}/alunos/1/cursos/3
+
+### Ler pelo aluno
+GET {{host}}/alunos/1/cursos
+
+### Ler pelo curso
+GET {{host}}/cursos/1/alunos
+
+### Cancelar matrícula (204)
+DELETE {{host}}/alunos/1/cursos/2
+
+############ 4) Integridade ############
+
+### Excluir instrutor com cursos -> 409
+DELETE {{host}}/instrutores/2
+
+### Mover os cursos do instrutor 2 para o 1
+PUT {{host}}/cursos/3/instrutor/1
+
+###
+PUT {{host}}/cursos/1/instrutor/1
+
+### Excluir de novo -> 204
+DELETE {{host}}/instrutores/2
+
+### Validação: curso sem instrutorId -> 400
+POST {{host}}/cursos
+Content-Type: application/json
+
+{ "nome": "Sem instrutor", "cargaHoraria": 10 }
+
+############ 5) REST · DTO ############
+
+### Validação: curso sem nome -> 400
+POST {{host}}/cursos
+Content-Type: application/json
+
+{ "cargaHoraria": 10, "instrutorId": 1 }
+
+### Respostas em DTO (sem ciclos)
+GET {{host}}/cursos/1
+
+###
+GET {{host}}/alunos/1
+
+###
+GET {{host}}/instrutores/1
